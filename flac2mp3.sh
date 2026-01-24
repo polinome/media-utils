@@ -30,9 +30,40 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+# Display message with severity: 0=success, 1=warning, 2=error
+# Usage: display_message <severity> <message>
+display_message() {
+  local severity=$1
+  shift
+  local msg="$@"
+  case $severity in
+    0)
+      # Success (green)
+      echo -e "${GREEN}[SUCCESS] $msg${NC}"
+      ;;
+    1)
+      # Warning (yellow)
+      echo -e "${YELLOW}[WARNING] $msg${NC}"
+      ;;
+    2)
+      # Error (red)
+      echo -e "${RED}[ERROR] $msg${NC}"
+      ;;
+    *)
+      echo "$msg"
+      ;;
+  esac
+}
+
 # Check argument
 if [ -z "$input" ]; then
-  echo "Usage: $0 [-e|--extension <extension>] <file or directory>"
+  display_message 2 "Usage: $0 [-e|--extension <extension>] <file or directory>"
   exit 1
 fi
 
@@ -53,18 +84,18 @@ convert_flac() {
 
   # Check if file exists
   if [ ! -f "$file" ]; then
-    echo "File $file does not exist."
+    display_message 2 "File $file does not exist."
     return
   fi
 
   dest="${file%.*}.mp3"
   if [ -f "$dest" ]; then
-    echo "Destination file $dest already exists. Skipping."
+    display_message 1 "Destination file $dest already exists. Skipping."
     return
   fi
 
   if [ "$APP_ENV" = "DEV" ]; then
-    echo "[DEV] Simulating conversion: touch $dest"
+    echo -e "[DEV] Simulating conversion: touch $dest"
     touch "$dest"
     return
   fi
@@ -74,14 +105,13 @@ convert_flac() {
   timestamp="$(date +%Y%m%d_%H%M%S_%N)"
   log_file="$LOG_DIR/${base_name%.*}_$timestamp.log"
 
-  echo "Converting $file to $dest ... (log: $log_file)"
   ffmpeg -nostdin -i "$file" -ab 320k -map_metadata 0 -id3v2_version 3 "$dest" > "$log_file" 2>&1
 
   if [ $? -eq 0 ]; then
-    echo "Conversion finished: $dest"
+    display_message 0 "Conversion finished: $dest"
     rm -f "$log_file"
   else
-    echo "Error converting $file. See log: $log_file"
+    display_message 2 "Error converting $file. See log: $log_file"
   fi
 }
 
@@ -92,7 +122,7 @@ if [ -f "$input" ]; then
     if [[ "$input" == *.${EXTENSION} ]]; then
       convert_flac "$input"
     else
-      echo "Provided file does not match the extension .$EXTENSION."
+      display_message 2 "Provided file does not match the extension .$EXTENSION."
       exit 1
     fi
   else
@@ -100,7 +130,7 @@ if [ -f "$input" ]; then
     if is_audio_file "$input"; then
       convert_flac "$input"
     else
-      echo "Provided file does not have a valid audio extension."
+      display_message 2 "Provided file does not have a valid audio extension."
       exit 1
     fi
   fi
@@ -121,13 +151,13 @@ elif [ -d "$input" ]; then
     done < <(eval "find \"$input\" -type f ( $find_expr ) -print0")
   fi
   if [ ${#files[@]} -eq 0 ]; then
-    echo "no music file found in the directory \"$input\""
+    display_message 2 "no music file found in the directory \"$input\""
     exit 1
   fi
   for file in "${files[@]}"; do
     convert_flac "$file"
   done
 else
-  echo "Argument is neither a valid file nor directory."
+  display_message 2 "Argument is neither a valid file nor directory."
   exit 1
 fi
