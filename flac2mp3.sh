@@ -48,10 +48,14 @@ display_message() {
       echo -e "${GREEN}[SUCCESS] $msg${NC}"
       ;;
     1)
+      # Debug (default color)
+      echo -e "[DEBUG] $msg"
+      ;;
+    2)
       # Warning (yellow)
       echo -e "${YELLOW}[WARNING] $msg${NC}"
       ;;
-    2)
+    3)
       # Error (red)
       echo -e "${RED}[ERROR] $msg${NC}"
       ;;
@@ -63,7 +67,7 @@ display_message() {
 
 # Check argument
 if [ -z "$input" ]; then
-  display_message 2 "Usage: $0 [-e|--extension <extension>] <file or directory>"
+  display_message 3 "Usage: $0 [-e|--extension <extension>] <file or directory>"
   exit 1
 fi
 
@@ -84,13 +88,13 @@ convert_flac() {
 
   # Check if file exists
   if [ ! -f "$file" ]; then
-    display_message 2 "File $file does not exist."
+    display_message 3 "File $file does not exist."
     return
   fi
 
   dest="${file%.*}.mp3"
   if [ -f "$dest" ]; then
-    display_message 1 "Destination file $dest already exists. Skipping."
+    display_message 2 "Destination file $dest already exists. Skipping."
     return
   fi
 
@@ -126,11 +130,12 @@ convert_flac() {
     display_message 0 "Conversion finished: $dest"
     rm -f "$log_file"
   else
-    display_message 2 "Error converting $file. See log: $log_file"
+    display_message 3 "Error converting $file. See log: $log_file"
   fi
 }
 
 # Remove log files older than 60 minutes
+display_message 1 "Cleaning up old log files in $LOG_DIR ..."
 find "$LOG_DIR" -type f -mmin +60 -delete
 
 if [ -f "$input" ]; then
@@ -140,7 +145,7 @@ if [ -f "$input" ]; then
     if [[ "$input" == *.${EXTENSION} ]]; then
       convert_flac "$input"
     else
-      display_message 2 "Provided file does not match the extension .$EXTENSION."
+      display_message 3 "Provided file does not match the extension .$EXTENSION."
       exit 1
     fi
   else
@@ -148,7 +153,7 @@ if [ -f "$input" ]; then
     if is_audio_file "$input"; then
       convert_flac "$input"
     else
-      display_message 2 "Provided file does not have a valid audio extension."
+      display_message 3 "Provided file does not have a valid audio extension."
       exit 1
     fi
   fi
@@ -169,13 +174,13 @@ elif [ -d "$input" ]; then
     done < <(eval "find \"$input\" -type f \\( $find_expr \\) -print0")
   fi
   if [ ${#files[@]} -eq 0 ]; then
-    display_message 2 "no music file found in the directory \"$input\""
+    display_message 3 "no music file found in the directory \"$input\""
     exit 1
   fi
   for file in "${files[@]}"; do
     convert_flac "$file"
   done
 else
-  display_message 2 "Argument is neither a valid file nor directory."
+  display_message 3 "Argument is neither a valid file nor directory."
   exit 1
 fi
