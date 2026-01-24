@@ -130,6 +130,9 @@ convert_flac() {
   fi
 }
 
+# Remove log files older than 60 minutes
+find "$LOG_DIR" -type f -mmin +60 -delete
+
 if [ -f "$input" ]; then
   # If it's a file
   if [ -n "$EXTENSION" ]; then
@@ -163,7 +166,7 @@ elif [ -d "$input" ]; then
     find_expr="${find_expr%-o }" # Remove trailing -o
     while IFS= read -r -d '' file; do
       files+=("$file")
-    done < <(eval "find \"$input\" -type f ( $find_expr ) -print0")
+    done < <(eval "find \"$input\" -type f \\( $find_expr \\) -print0")
   fi
   if [ ${#files[@]} -eq 0 ]; then
     display_message 2 "no music file found in the directory \"$input\""
