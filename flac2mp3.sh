@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Load .env file if present in the script directory
-__DIR__="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$__DIR__/.env" ]; then
+# Load .env file from current working directory if present
+# Not from the script directory or alias location
+if [ -f "$(pwd)/.env" ]; then
   set -a
-  source "$__DIR__/.env"
+  source "$(pwd)/.env"
   set +a
 fi
 
@@ -41,7 +41,7 @@ NC='\033[0m' # No Color
 display_message() {
   local severity=$1
   shift
-  local msg="$@"
+  local msg="$*"
   case $severity in
     0)
       # Success (green)
@@ -105,7 +105,22 @@ convert_flac() {
   timestamp="$(date +%Y%m%d_%H%M%S_%N)"
   log_file="$LOG_DIR/${base_name%.*}_$timestamp.log"
 
-  ffmpeg -nostdin -i "$file" -ab 320k -map_metadata 0 -id3v2_version 3 "$dest" > "$log_file" 2>&1
+  # Start ffmpeg in background
+  ffmpeg -nostdin -i "$file" -ab 320k -map_metadata 0 -id3v2_version 3 "$dest" > "$log_file" 2>&1 &
+  ffmpeg_pid=$!
+
+  # Loader spinner
+  spinner='|/-\\'
+  i=0
+  # Print the message once, then animate only the spinner at the end
+  printf "Converting %s to %s ... (log: %s) " "$file" "$dest" "$log_file"
+  while kill -0 $ffmpeg_pid 2>/dev/null; do
+    i=$(( (i+1) % 4 ))
+    printf "\b%s" "${spinner:$i:1}"
+    sleep 0.2
+  done
+  wait $ffmpeg_pid
+  printf "\b \r" # Clear spinner and return to start of line
 
   if [ $? -eq 0 ]; then
     display_message 0 "Conversion finished: $dest"
