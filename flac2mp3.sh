@@ -9,7 +9,7 @@ if [ -f "$(pwd)/.env" ]; then
 fi
 
 # List of valid audio extensions
-AUDIO_EXTENSIONS=(flac wav aif aiff alac ape ogg m4a wv tta)
+AUDIO_EXTENSIONS=(flac wav aif aiff alac ape ogg m4a wv tta aac)
 EXTENSION=""
 
 # Set log directory from .env or use default
@@ -74,7 +74,8 @@ fi
 is_audio_file() {
   file="$1"
   ext="${file##*.}"
-  ext_lc="${ext,,}"
+  # Convert extension to lowercase (compatible with bash 3)
+  ext_lc=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
   for valid in "${AUDIO_EXTENSIONS[@]}"; do
     if [[ "$ext_lc" == "$valid" ]]; then
       return 0
