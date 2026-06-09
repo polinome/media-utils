@@ -9,7 +9,7 @@ if [ -f "$(pwd)/.env" ]; then
 fi
 
 # List of valid audio extensions
-AUDIO_EXTENSIONS=(flac wav aif aiff alac ape ogg m4a wv tta aac)
+AUDIO_EXTENSIONS=(flac wav aif aiff alac ape ogg m4a wv tta aac opus)
 EXTENSION=""
 
 # Set log directory from .env or use default
