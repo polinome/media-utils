@@ -10,6 +10,8 @@ fi
 
 # List of valid audio extensions
 AUDIO_EXTENSIONS=(flac wav aif aiff alac ape ogg m4a wv tta aac opus)
+VIDEO_EXTENSIONS=(mp4 mkv avi mov wmv flv webm mpg mpeg m4v)
+EXTENSIONS=("${AUDIO_EXTENSIONS[@]}" "${VIDEO_EXTENSIONS[@]}")
 EXTENSION=""
 
 # Set log directory from .env or use default
@@ -76,7 +78,7 @@ is_audio_file() {
   ext="${file##*.}"
   # Convert extension to lowercase (compatible with bash 3)
   ext_lc=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
-  for valid in "${AUDIO_EXTENSIONS[@]}"; do
+  for valid in "${EXTENSIONS[@]}"; do
     if [[ "$ext_lc" == "$valid" ]]; then
       return 0
     fi
@@ -168,7 +170,7 @@ elif [ -d "$input" ]; then
     done < <(find "$input" -type f -name "*.${EXTENSION}" -print0)
   else
     # No extension provided, search for all valid audio files
-    find_expr=$(printf -- '-iname "*.%s" -o ' "${AUDIO_EXTENSIONS[@]}")
+    find_expr=$(printf -- '-iname "*.%s" -o ' "${EXTENSIONS[@]}")
     find_expr="${find_expr%-o }" # Remove trailing -o
     while IFS= read -r -d '' file; do
       files+=("$file")
